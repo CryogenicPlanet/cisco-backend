@@ -1,0 +1,21 @@
+{
+  "name": "cisco-internship",
+  "version": "0.1.0",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/CryogenicPlanet/cisco-backend.git"
+  },
+  "license": "ISC",
+  "dependencies": {
+    "body-parser": "^1.18.1",
+    "express": "~3.2.4",
+    "getenv": "^0.7.0",
+    "mysql": "^2.14.1",
+    "randomstring": "^1.1.5",
+    "sha512": "0.0.1"
+  }
+}
