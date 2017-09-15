@@ -15,9 +15,10 @@ app.use(bodyParser.json());
 
 var server = app.listen(port);
 
-    /*    var key = "pAgkh9n8";
+    /*  Use for user generation 
+        var key = ""//Salt here;
         var hasher = sha512.hmac(key);
-        var hash = hasher.finalize("12345");
+        var hash = hasher.finalize("")// Password here;
         console.log( hash.toString('hex')); */
 var con = mysql.createConnection({
   host: getenv('IP'),
@@ -52,9 +53,8 @@ app.post('/login', function(req, res) {
             loginStatus = "Wrong Password";
         }
         res.status(201).json({
-      status: loginStatus,
-      
-  });
+            status: loginStatus,
+        });
     });
   
 });
