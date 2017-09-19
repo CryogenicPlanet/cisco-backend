@@ -1,4 +1,4 @@
-//Enviornment Variables
+//Environment Variables
 var port = process.env.PORT;
 
 //Libraries
@@ -34,7 +34,7 @@ con.connect(function(err) {
 // HTTP Requests
 app.post('/login', function(req, res) {
     console.log(req.body);
-    var loginStatus;
+    var loginMessage,loginStatus;
     // Here is the problem
     var email = req.body.email;
     var password = req.body.pword;
@@ -47,13 +47,17 @@ app.post('/login', function(req, res) {
         var finalPassword = hash.toString('hex');
         if(finalPassword == result[0].Password){
             console.log("Login Succesfull");
-            loginStatus = "Login Succesfull";
+            loginMessage = "Login Succesfull";
+            loginStatus = true; 
         } else {
             console.log("Wrong Password");
-            loginStatus = "Wrong Password";
+            loginMessage = "Wrong Password";
+            loginStatus = false;
         }
         res.status(201).json({
-            status: loginStatus,
+            message : loginMessage,
+            status : loginStatus
+            
         });
     });
   
