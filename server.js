@@ -32,44 +32,7 @@ con.connect(function(err) {
 });
 // HTTP Requests
 app.post('/login', function(req, res) {
-    console.log(req.body);
-    //console.log(req);
-    var loginMessage, loginStatus;
-    var email = req.body.email;
-    var password = req.body.pword;
-    console.log("SELECT Name,Password,Salt FROM Users WHERE Email ='" + email + "';");
-    con.query("SELECT Name,Password,Salt FROM Users WHERE Email ='" + email + "';", function(err, result, fields) {
-        if (err) console.log("Error :" + err);
-        if (result != "") {
-            var key = result[0].Salt;
-            //console.log(key);
-            var hasher = sha512.hmac(key);
-            var hash = hasher.finalize(password);
-            var finalPassword = hash.toString('hex');
-            if (finalPassword == result[0].Password) {
-                console.log("Login Succesfull");
-                loginMessage = "Login Succesfull";
-                loginStatus = true;
-            }
-            else {
-                console.log("Wrong Password");
-                loginMessage = "Wrong Password";
-                loginStatus = false;
-            }
-        }
-        else {
-            loginMessage = "No users Found";
-            loginStatus = false;
-        }
-
-
-        res.status(201).json({
-            message: loginMessage,
-            status: loginStatus
-
-        });
-    });
-
+  user.loginUser(req,res,con);
 });
 app.post('/Signup',function(req, res){
     user.newUser(req,res,con);
