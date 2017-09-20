@@ -12,6 +12,7 @@
   "license": "ISC",
   "dependencies": {
     "body-parser": "^1.18.1",
+    "cors": "^2.8.4",
     "express": "~3.2.4",
     "getenv": "^0.7.0",
     "mysql": "^2.14.1",

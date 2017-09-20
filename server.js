@@ -7,31 +7,13 @@ var mysql = require('mysql');
 var sha512 = require('sha512');
 var bodyParser = require('body-parser');
 var jsonParser = bodyParser.json();
-var _ = require('underscore');
+var cors = require("cors");
 //Server
 var express = require('express');
 var app = express();
-
 app.use(express.logger());
+app.use(cors());
 app.use(bodyParser.json());
-  app.use(allowCrossDomain);
-
-function allowCrossDomain(req, res, next) {
-  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
-
-  var origin = req.headers.origin;
-  if (_.contains(app.get('allowed_origins'), origin)) {
-    res.setHeader('Access-Control-Allow-Origin', origin);
-  }
-
-  if (req.method === 'OPTIONS') {
-    res.send(200);
-  } else {
-    next();
-  }
-}
-  
-
 var server = app.listen(port);
 var con = mysql.createConnection({
     host: getenv('IP'),
@@ -47,40 +29,41 @@ con.connect(function(err) {
 // HTTP Requests
 app.post('/login', function(req, res) {
     console.log(req.body);
-    //console.log(req.query);
+    //console.log(req);
     var loginMessage, loginStatus;
     var email = req.body.email;
     var password = req.body.pword;
     console.log("SELECT Name,Password,Salt FROM Users WHERE Email ='" + email + "';");
     con.query("SELECT Name,Password,Salt FROM Users WHERE Email ='" + email + "';", function(err, result, fields) {
         if (err) console.log("Error :" + err);
-        if(result != ""){
-        var key = result[0].Salt;
-        //console.log(key);
-        var hasher = sha512.hmac(key);
-        var hash = hasher.finalize(password);
-        var finalPassword = hash.toString('hex');
-        if (finalPassword == result[0].Password) {
-            console.log("Login Succesfull");
-            loginMessage = "Login Succesfull";
-            loginStatus = true;
+        if (result != "") {
+            var key = result[0].Salt;
+            //console.log(key);
+            var hasher = sha512.hmac(key);
+            var hash = hasher.finalize(password);
+            var finalPassword = hash.toString('hex');
+            if (finalPassword == result[0].Password) {
+                console.log("Login Succesfull");
+                loginMessage = "Login Succesfull";
+                loginStatus = true;
+            }
+            else {
+                console.log("Wrong Password");
+                loginMessage = "Wrong Password";
+                loginStatus = false;
+            }
         }
         else {
-            console.log("Wrong Password");
-            loginMessage = "Wrong Password";
+            loginMessage = "No users Found";
             loginStatus = false;
         }
-    } else {
-        loginMessage = "No users Found";
-        loginStatus = false;
-    }
-     
-     
+
+
         res.status(201).json({
             message: loginMessage,
             status: loginStatus
 
-        });   
+        });
     });
 
 });
