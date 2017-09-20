@@ -9,7 +9,7 @@ var bodyParser = require('body-parser');
 var jsonParser = bodyParser.json();
 var cors = require("cors");
 //Modules
-var user = require("/user.js");
+var user = require("./user.js");
 //Server
 var express = require('express');
 var app = express();
@@ -71,5 +71,7 @@ app.post('/login', function(req, res) {
     });
 
 });
-app.post('/Signup',user.newUser(req,res,conn));
+app.post('/Signup',function(req, res){
+    user.newUser(req,res,con);
+});
 
