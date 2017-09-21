@@ -37,4 +37,7 @@ app.post('/login', function(req, res) {
 app.post('/Signup',function(req, res){
     user.newUser(req,res,con);
 });
+app.get('/verify',function(req, res) {
+    user.verify(req,res,con);
+})
 

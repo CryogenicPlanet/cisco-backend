@@ -1,16 +1,23 @@
 //Imports
 var sql = require('mysql');
-var exports = module.exports = {};
 var solr = require('solr-client');
 var client = solr.createClient();
+var express = require('express');
+var app = express();
+var exports = module.exports = {};
 
+exports.getSearch = function(req, res, con) {
 
-exports.getSearch = function(req, res, con)
-
-con.connect(function(err) {
-  if (err) throw err;
-  con.query("SELECT * FROM Books WHERE Name ='"+ req.body. + "'", function (err, result, fields) {
+con.query("SELECT * FROM Books WHERE Name ='"+ req.body.name + "'", function (err, result, fields) {
     if (err) throw err;
     console.log(result);
   });
+}
+
+app.get('/', function(req, res){
+  res.render('index.html');
 });
+
+app.get('/search', function(req, res){
+  
+})

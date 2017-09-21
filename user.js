@@ -10,7 +10,7 @@ exports.newUser = function(req, res, con) {
     var Status, Message;
     var name = req.body.name;
     var email = req.body.email;
-    
+
     var password = req.body.pword;
     var key = randomstring.generate(8);
     var hasher = sha512.hmac(key);
@@ -18,6 +18,8 @@ exports.newUser = function(req, res, con) {
     var finalPassword = hash.toString('hex');
     var emailhash = hasher.finalize(email);
     var finalemailhash = emailhash.toString('hex');
+    console.log("Email Hash :" + finalemailhash);
+    console.log("Key : "+ key);
     var sql = "INSERT INTO Users (Name, Email,Password,Salt) VALUES ('" + name + "','" + email + "','" + finalPassword + "','" + key + "')";
     con.query(sql, function(err, result) {
         if (err) {
@@ -80,7 +82,36 @@ exports.newUser = function(req, res, con) {
 }
 
 exports.verify = function(req, res, con) {
-
+    var hash = req.query.hash;
+    var uuid = req.query.uuid;
+    console.log(hash);
+    console.log(uuid);
+    con.query("SELECT Email,Salt FROM Users WHERE UUID =" + uuid + ";", function(err, result, fields) {
+        if (err) console.log("Error :" + err);
+        if (result != "") {
+            console.log(result);
+            var key = result[0].Salt;
+            console.log("Key : " + key);
+            var hasher = sha512.hmac(key);
+            var emailhash = hasher.finalize(result[0].Email);
+            var finalemailhash = emailhash.toString('hex');
+            console.log(finalemailhash);
+            if (finalemailhash === hash) {
+                console.log("Succesfully Verified");
+                var sql = "UPDATE Users SET Verified = 1 WHERE UUID = " + uuid + ";"
+                con.query(sql, function(err, result) {
+                    if (err) throw err;
+                    console.log(result.affectedRows + " record(s) updated");
+                });
+            }
+            else {
+                console.log("Error Verifing Email");
+            }
+        }
+        else {
+            console.log("No users Found");
+        }
+    });
 }
 
 

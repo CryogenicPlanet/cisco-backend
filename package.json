@@ -19,6 +19,7 @@
     "nodemailer": "^4.1.0",
     "randomstring": "^1.1.5",
     "sha512": "0.0.1",
+    "solr": "^0.3.0",
     "solr-client": "^0.7.0"
   }
 }
