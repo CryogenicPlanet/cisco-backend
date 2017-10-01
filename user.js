@@ -1,5 +1,5 @@
 //Libraries
-var mysql = require('mysql');
+//var mysql = require('mysql');
 var sha512 = require('sha512');
 var nodemailer = require('nodemailer');
 var randomstring = require("randomstring");
@@ -16,8 +16,6 @@ exports.newUser = function(req, res, con) {
     var hasher = sha512.hmac(key);
     var hash = hasher.finalize(password); // Password here;
     var finalPassword = hash.toString('hex');
-
-
     var sql = "INSERT INTO Users (Name, Email,Password,Salt) VALUES ('" + name + "','" + email + "','" + finalPassword + "','" + key + "')";
     con.query(sql, function(err, result) {
         if (err) {
@@ -117,44 +115,39 @@ exports.verify = function(req, res, con) {
     });
 }
 
-exports.loginUser = function(req, res, con) {
+exports.loginUser = async function(req, res, con) {
     var loginMessage, loginStatus;
     var email = req.body.email;
     var password = req.body.pword;
-    con.query("SELECT Name,Password,Salt FROM Users WHERE Email ='" + email + "';", function(err, result, fields) {
-        if (err) console.log("Error :" + err);
-        if (result != "") {
-            var key = result[0].Salt;
-            //console.log(key);
-            var hasher = sha512.hmac(key);
-            var hash = hasher.finalize(password);
-            var finalPassword = hash.toString('hex');
-            if (finalPassword == result[0].Password) {
-                console.log("Login Succesfull");
-                loginMessage = "Login Succesfull";
-                loginStatus = true;
-            }
-            else {
-                console.log("Wrong Password");
-                loginMessage = "Wrong Password";
-                loginStatus = false;
-            }
+    let result = await con.query(`SELECT Name,Password,Salt FROM Users WHERE Email ='${email}';`)
+    if (result != "") {
+        var key = result[0].Salt;
+        //console.log(key);
+        var hasher = sha512.hmac(key);
+        var hash = hasher.finalize(password);
+        var finalPassword = hash.toString('hex');
+        if (finalPassword == result[0].Password) {
+            console.log("Login Succesfull");
+            loginMessage = "Login Succesfull";
+            loginStatus = true;
         }
         else {
-            loginMessage = "Email not found";
+            console.log("Wrong Password");
+            loginMessage = "Wrong Password";
             loginStatus = false;
         }
-
-
-        res.status(201).json({
-            message: loginMessage,
-            status: loginStatus
-
-        });
+    }
+    else {
+        loginMessage = "Email not found";
+        loginStatus = false;
+    }
+    res.status(201).json({
+        message: loginMessage,
+        status: loginStatus
     });
-}
+};
 
-exports.followerBooks = function(uuid, res, con) {
+exports.followerBooks = async function(uuid, res, con) {
     function NewBook(newuuid, ubid, bookname, author, genre, year, description) {
         this.uuid = newuuid;
         this.ubid = ubid;
@@ -165,31 +158,19 @@ exports.followerBooks = function(uuid, res, con) {
         this.description = description;
         //   this.image = image
     } // Class New Book will all Relevant Details about a Book
+    var newbooks = [];
     var query = `SELECT * FROM ${"`User's Book`"} WHERE User IN (SELECT Following FROM Following WHERE User=${uuid}) ORDER BY Timestamp LIMIT 10`; //First Query Get All New Books From Followers    
-    con.query(query, function(err, result, fields) {
-        if (err) console.log("Error :" + err);
-        for (var newBook of result) {
-            let newuuid = newBook.User; // Followers Id
-            let bookid = newBook.Book; // Book They Added
-            let description = newBook.Description; // Thier Personal Description
-            let query2 = `SELECT * FROM Books WHERE UBID=${bookid}`; //Second Query Gets All Details About said book
-            con.query(query2, function(err2, result2, fields2) {
-                if (err2) console.log(`Error : ${err2}`);
-                let query3 = `SELECT Name FROM Authors WHERE UAID=${result2[0].Author}`; //Third Query Gets Author Name of the Book
-                con.query(query3, async function(err3, result3, fields3) {
-                    if (err3) console.log(`Error : ${err3}`);
-                    let query4 = `SELECT Name FROM Genres WHERE UGID=${result2[0].Genre}`; //Fouth Query Gets Genre of the Book
-                    let result4 = await con.query(query4);
-                    /*
-                    Create a new temp object of type newBook()
-                    This temp object is created as many times as the number of new books you followers have added limited at 10 currently, Limit set in intial query
-                    */
-                    var temp = new NewBook(newuuid, bookid, result2[0].Name, result3[0].Name, result4[0].Name, result2[0].Year, description); // result2[0], result3[0],result4[0] are results of Queries 2,3 and 4 respectively.
-                    // We need to store this temp variable somewhere and then send back all ten or less of these to front-end
-                    console.log(temp);
-                    // End of Fourth Query
-                }); // End of Third Query
-            }); // End of Second Query
-        } // End of For Loop
-    }); // End of First Query
-}// End of function
+    let result = await con.query(query);
+    for (var userBook of result) {
+        let [book] = await con.query(`SELECT * FROM Books WHERE UBID=${userBook.Book}`); 
+        let [author] = await con.query(`SELECT Name FROM Authors WHERE UAID=${book.Author}`);
+        let [genre] = await con.query(`SELECT Name FROM Genres WHERE UGID=${book.Genre}`);
+        /*
+        Create a new temp object of type newBook()
+        This temp object is created as many times as the number of new books you followers have added limited at 10 currently, Limit set in intial query
+        */
+        newbooks.push(new NewBook(userBook.User, userBook.Book, book.Name, author.Name, genre.Name, book.Year, userBook.Description));
+
+    }// End of For Loop
+    res.status(200).json(newbooks);
+};
