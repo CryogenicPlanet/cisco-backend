@@ -155,7 +155,7 @@ exports.loginUser = function(req, res, con) {
 }
 
 exports.followerBooks = function(uuid, res, con) {
-    function newBook(newuuid, ubid, bookname, author, genre, year, description) {
+    function NewBook(newuuid, ubid, bookname, author, genre, year, description) {
         this.uuid = newuuid;
         this.ubid = ubid;
         // this.username = username;
@@ -165,29 +165,27 @@ exports.followerBooks = function(uuid, res, con) {
         this.description = description;
         //   this.image = image
     } // Class New Book will all Relevant Details about a Book
-    var query = "SELECT * FROM `User's Book` WHERE User IN (SELECT Following FROM Following WHERE User=" + uuid + ") ORDER BY Timestamp LIMIT 10"; //First Query Get All New Books From Followers
+    var query = `SELECT * FROM 'User's Book' WHERE User IN (SELECT Following FROM Following WHERE User=${uuid}) ORDER BY Timestamp LIMIT 10`; //First Query Get All New Books From Followers
     con.query(query, function(err, result, fields) {
         if (err) console.log("Error :" + err);
-        var len = result.length // Number of New Books Added
-        var newBooks = [len]; // Potential Array To Store Data
-        for (var i = 0; i < len; i++) {
-            var newuuid = result[i].User; // Followers Id
-            var bookid = result[i].Book; // Book They Added
-            var description = result[i].Description; // Thier Personal Description
-            var query2 = "SELECT * FROM Books WHERE UBID=" + bookid; //Second Query Gets All Details About said book
+        for (var newBook of result) {
+            let newuuid = newBook.User; // Followers Id
+            let bookid = newBook.Book; // Book They Added
+            let description = newBook.Description; // Thier Personal Description
+            let query2 = `SELECT * FROM Books WHERE UBID=${bookid}`; //Second Query Gets All Details About said book
             con.query(query2, function(err2, result2, fields2) {
-                if (err2) console.log("Error :" + err2);
-                var query3 = "SELECT Name FROM Authors WHERE UAID=" + result2[0].Author; //Third Query Gets Author Name of the Book
+                if (err2) console.log(`Error : ${err2}`);
+                let query3 = `SELECT Name FROM Authors WHERE UAID=${result2[0].Author}`; //Third Query Gets Author Name of the Book
                 con.query(query3, function(err3, result3, fields3) {
-                    if (err3) console.log("Error :" + err3);
-                    var query4 = "SELECT Name FROM Genres WHERE UGID=" + result2[0].Genre; //Fouth Query Gets Genre of the Book
+                    if (err3) console.log(`Error : ${err3}`);
+                    let query4 = `SELECT Name FROM Genres WHERE UGID=${result2[0].Genre}`; //Fouth Query Gets Genre of the Book
                     con.query(query4, function(err4, result4, fields4) {
-                        if (err4) console.log("Error :" + err4);
+                        if (err4) console.log(`Error : ${err4}`);
                         /*
                         Create a new temp object of type newBook()
                         This temp object is created as many times as the number of new books you followers have added limited at 10 currently, Limit set in intial query
                         */
-                        var temp = new newBook(newuuid, bookid, result2[0].Name, result3[0].Name, result4[0].Name, result2[0].Year, description); // result2[0], result3[0],result4[0] are results of Queries 2,3 and 4 respectively.
+                        var temp = new NewBook(newuuid, bookid, result2[0].Name, result3[0].Name, result4[0].Name, result2[0].Year, description); // result2[0], result3[0],result4[0] are results of Queries 2,3 and 4 respectively.
                         // We need to store this temp variable somewhere and then send back all ten or less of these to front-end
                         console.log(temp);
                     });// End of Fourth Query
