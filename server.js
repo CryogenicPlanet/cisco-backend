@@ -39,5 +39,8 @@ app.post('/Signup',function(req, res){
 });
 app.get('/verify',function(req, res) {
     user.verify(req,res,con);
+});
+app.get('/newbooks',function(req, res) {
+    user.followerBooks(req.query.uuid,res,con);
 })
 

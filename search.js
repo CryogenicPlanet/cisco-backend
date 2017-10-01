@@ -14,10 +14,3 @@ con.query("SELECT * FROM Books WHERE Name ='"+ req.body.name + "'", function (er
   });
 }
 
-app.get('/', function(req, res){
-  res.render('index.html');
-});
-
-app.get('/search', function(req, res){
-  
-})
