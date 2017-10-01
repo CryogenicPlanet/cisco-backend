@@ -165,7 +165,7 @@ exports.followerBooks = function(uuid, res, con) {
         this.description = description;
         //   this.image = image
     } // Class New Book will all Relevant Details about a Book
-    var query = `SELECT * FROM 'User's Book' WHERE User IN (SELECT Following FROM Following WHERE User=${uuid}) ORDER BY Timestamp LIMIT 10`; //First Query Get All New Books From Followers
+    var query = `SELECT * FROM ${"`User's Book`"} WHERE User IN (SELECT Following FROM Following WHERE User=${uuid}) ORDER BY Timestamp LIMIT 10`; //First Query Get All New Books From Followers    
     con.query(query, function(err, result, fields) {
         if (err) console.log("Error :" + err);
         for (var newBook of result) {
@@ -176,19 +176,18 @@ exports.followerBooks = function(uuid, res, con) {
             con.query(query2, function(err2, result2, fields2) {
                 if (err2) console.log(`Error : ${err2}`);
                 let query3 = `SELECT Name FROM Authors WHERE UAID=${result2[0].Author}`; //Third Query Gets Author Name of the Book
-                con.query(query3, function(err3, result3, fields3) {
+                con.query(query3, async function(err3, result3, fields3) {
                     if (err3) console.log(`Error : ${err3}`);
                     let query4 = `SELECT Name FROM Genres WHERE UGID=${result2[0].Genre}`; //Fouth Query Gets Genre of the Book
-                    con.query(query4, function(err4, result4, fields4) {
-                        if (err4) console.log(`Error : ${err4}`);
-                        /*
-                        Create a new temp object of type newBook()
-                        This temp object is created as many times as the number of new books you followers have added limited at 10 currently, Limit set in intial query
-                        */
-                        var temp = new NewBook(newuuid, bookid, result2[0].Name, result3[0].Name, result4[0].Name, result2[0].Year, description); // result2[0], result3[0],result4[0] are results of Queries 2,3 and 4 respectively.
-                        // We need to store this temp variable somewhere and then send back all ten or less of these to front-end
-                        console.log(temp);
-                    });// End of Fourth Query
+                    let result4 = await con.query(query4);
+                    /*
+                    Create a new temp object of type newBook()
+                    This temp object is created as many times as the number of new books you followers have added limited at 10 currently, Limit set in intial query
+                    */
+                    var temp = new NewBook(newuuid, bookid, result2[0].Name, result3[0].Name, result4[0].Name, result2[0].Year, description); // result2[0], result3[0],result4[0] are results of Queries 2,3 and 4 respectively.
+                    // We need to store this temp variable somewhere and then send back all ten or less of these to front-end
+                    console.log(temp);
+                    // End of Fourth Query
                 }); // End of Third Query
             }); // End of Second Query
         } // End of For Loop
