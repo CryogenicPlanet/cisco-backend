@@ -1,10 +1,72 @@
 //Libraries
-//var mysql = require('mysql');
-var sha512 = require('sha512');
-var nodemailer = require('nodemailer');
-var randomstring = require("randomstring");
+var sha512 = require('sha512'); // Sha512 Library, Sha512 is a hash
+var nodemailer = require('nodemailer');// Nodemailer is an SMTP mailer for node
+var randomstring = require("randomstring"); // Cmon What does this suggest?
 
-var exports = module.exports = {};
+var exports = module.exports = {}; //  This is exporting this variable, making it's scope public and accesable my any other file
+
+exports.loginUser = async function(req, res, con) { // Function to Login Users In, Asynchronously(Don't worry about this)
+    var loginMessage, loginStatus; // Varibles to be sent as responses to front-end
+    var email = req.body.email; // Getting email from Post
+    var password = req.body.pword; // Getting password from Post
+    let result = await con.query(`SELECT Name,Password,Salt FROM Users WHERE Email ='${email}';`) /*
+    'let' is a key word similar to 'var', 'await' ensures the promise set my the query is finished before proceding, con is the database connection
+    "SELECT Name,Password,Salt FROM Users WHERE Email ='${email}';" gets Name,Password,Salt From the Table Users When the Email in the row is equal to variable email.
+    From Now queries, will be commented on only if they are unique in nature
+    */ 
+    if (result != "") { // Check if there is any User exsisting with that email or not
+        var key = result[0].Salt; // Assign the value of the Salt from the first result to key, this case emails should be unique and you should get only one result
+        var hasher = sha512.hmac(key); // Using Sha512 hasher
+        var hash = hasher.finalize(password); // Using Sha512 hasher
+        var finalPassword = hash.toString('hex'); // Converting the hash to a readable base16 string
+        if (finalPassword == result[0].Password) { // Checking if thet match
+            console.log("Login Succesfull"); 
+            loginMessage = "Login Succesfull"; // Assigning return Variable Success Values
+            loginStatus = true;
+        }
+        else { // Doesn't Match
+            console.log("Wrong Password"); 
+            loginMessage = "Wrong Password"; //  Assigning return Variable Failue Values and Type of Failure
+            loginStatus = false;
+        }
+    }
+    else {// No user Found
+        loginMessage = "Email not found";//  Assigning return Variable Failue Values and Type of Failure 
+        loginStatus = false;
+    }
+    res.status(201).json({ // Sending the Data back to Front-End
+        message: loginMessage,
+        status: loginStatus
+    });
+};
+
+exports.followerBooks = async function(uuid, res, con) {
+    function NewBook(newuuid, ubid, bookname, author, genre, year, description) {
+        this.uuid = newuuid;
+        this.ubid = ubid;
+        // this.username = username;
+        this.bookname = bookname;
+        this.author = author;
+        this.genre = genre;
+        this.description = description;
+        //   this.image = image
+    } // Class New Book will all Relevant Details about a Book
+    var newbooks = [];
+    var query = `SELECT * FROM ${"`User's Book`"} WHERE User IN (SELECT Following FROM Following WHERE User=${uuid}) ORDER BY Timestamp LIMIT 10`; //First Query Get All New Books From Followers    
+    let result = await con.query(query);
+    for (var userBook of result) {
+        let [book] = await con.query(`SELECT * FROM Books WHERE UBID=${userBook.Book}`); 
+        let [author] = await con.query(`SELECT Name FROM Authors WHERE UAID=${book.Author}`);
+        let [genre] = await con.query(`SELECT Name FROM Genres WHERE UGID=${book.Genre}`);
+        /*
+        Create a new temp object of type newBook()
+        This temp object is created as many times as the number of new books you followers have added limited at 10 currently, Limit set in intial query
+        */
+        newbooks.push(new NewBook(userBook.User, userBook.Book, book.Name, author.Name, genre.Name, book.Year, userBook.Description));
+
+    }// End of For Loop
+    res.status(200).json(newbooks);
+};
 
 exports.newUser = function(req, res, con) {
     var Status, Message;
@@ -80,7 +142,7 @@ exports.newUser = function(req, res, con) {
 
         });
     });
-}
+};
 
 exports.verify = function(req, res, con) {
     var userhash = req.query.hash;
@@ -113,64 +175,5 @@ exports.verify = function(req, res, con) {
             console.log("No users Found");
         }
     });
-}
-
-exports.loginUser = async function(req, res, con) {
-    var loginMessage, loginStatus;
-    var email = req.body.email;
-    var password = req.body.pword;
-    let result = await con.query(`SELECT Name,Password,Salt FROM Users WHERE Email ='${email}';`)
-    if (result != "") {
-        var key = result[0].Salt;
-        //console.log(key);
-        var hasher = sha512.hmac(key);
-        var hash = hasher.finalize(password);
-        var finalPassword = hash.toString('hex');
-        if (finalPassword == result[0].Password) {
-            console.log("Login Succesfull");
-            loginMessage = "Login Succesfull";
-            loginStatus = true;
-        }
-        else {
-            console.log("Wrong Password");
-            loginMessage = "Wrong Password";
-            loginStatus = false;
-        }
-    }
-    else {
-        loginMessage = "Email not found";
-        loginStatus = false;
-    }
-    res.status(201).json({
-        message: loginMessage,
-        status: loginStatus
-    });
 };
 
-exports.followerBooks = async function(uuid, res, con) {
-    function NewBook(newuuid, ubid, bookname, author, genre, year, description) {
-        this.uuid = newuuid;
-        this.ubid = ubid;
-        // this.username = username;
-        this.bookname = bookname;
-        this.author = author;
-        this.genre = genre;
-        this.description = description;
-        //   this.image = image
-    } // Class New Book will all Relevant Details about a Book
-    var newbooks = [];
-    var query = `SELECT * FROM ${"`User's Book`"} WHERE User IN (SELECT Following FROM Following WHERE User=${uuid}) ORDER BY Timestamp LIMIT 10`; //First Query Get All New Books From Followers    
-    let result = await con.query(query);
-    for (var userBook of result) {
-        let [book] = await con.query(`SELECT * FROM Books WHERE UBID=${userBook.Book}`); 
-        let [author] = await con.query(`SELECT Name FROM Authors WHERE UAID=${book.Author}`);
-        let [genre] = await con.query(`SELECT Name FROM Genres WHERE UGID=${book.Genre}`);
-        /*
-        Create a new temp object of type newBook()
-        This temp object is created as many times as the number of new books you followers have added limited at 10 currently, Limit set in intial query
-        */
-        newbooks.push(new NewBook(userBook.User, userBook.Book, book.Name, author.Name, genre.Name, book.Year, userBook.Description));
-
-    }// End of For Loop
-    res.status(200).json(newbooks);
-};
