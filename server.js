@@ -10,6 +10,7 @@ var jsonParser = bodyParser.json();
 var cors = require("cors");
 //Modules
 var user = require("./user.js");
+var borrow = require("./borrow.js")
 //Server
 var express = require('express');
 var app = express();
@@ -26,23 +27,28 @@ mysql.createConnection({
     user: getenv('C9_USER'),
     password: "",
     database: "c9"
-}).then(function(connection) {con = connection});
+}).then(function(connection) { con = connection });
 // con.connect(function(err) {
 
 //     if (err) console.log("Error :" + err);
 //     else console.log("Successful Db Con");
 // });
 // HTTP Requests
+//POST Request
 app.post('/login', function(req, res) {
-  user.loginUser(req,res,con);
+    user.loginUser(req, res, con);
 });
-app.post('/Signup',function(req, res){
-    user.newUser(req,res,con);
+app.post('/Signup', function(req, res) {
+    user.newUser(req, res, con);
 });
-app.get('/verify',function(req, res) {
-    user.verify(req,res,con);
-});
-app.get('/newbooks',function(req, res) {
-    user.followerBooks(req.query.uuid,res,con);
+app.post('/borrow',function(req, res) {
+    borrow.borrowBooks(req,res,con);
 });
 
+// GET Request
+app.get('/verify', function(req, res) {
+    user.verify(req, res, con);
+});
+app.get('/newbooks', function(req, res) {
+    user.followerBooks(req.query.uuid, res, con);
+});
