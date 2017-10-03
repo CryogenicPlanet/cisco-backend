@@ -2,7 +2,7 @@ var nodemailer = require('nodemailer');
 var exports = module.exports = {};
 
 exports.borrowBooks = async function(req, res, con) {
-    var status,message;
+    var status,resMessage;
     var lender = {
         Id: req.body.lender
     }
@@ -16,7 +16,7 @@ exports.borrowBooks = async function(req, res, con) {
         if (available.outstanding != 0) {
             console.log("Book already Taken"); // sent to post
             status = false;
-            message = "Book already Taken";
+            resMessage = "Book already Taken";
         }
         else {
             let [books] = await con.query(`SELECT Name,Year FROM Books WHERE UBID=${ubid}`);
@@ -83,16 +83,16 @@ exports.borrowBooks = async function(req, res, con) {
             if (sendMail(lender.Email, message) == true) {
                 console.log("Email alert sent");
                 status = true;
-                message = "Requested Sent";
+                resMessage = "Requested Sent";
             }
         }
     } else  {
         status = false;
-        message = "Too many outstanding books";
+        resMessage = "Too many outstanding books";
     }
     res.status(200).json({
         status : status,
-        message : message
+        message : resMessage
         });
 }
 
