@@ -2,30 +2,98 @@ var nodemailer = require('nodemailer');
 var exports = module.exports = {};
 
 exports.borrowBooks = async function(req, res, con) {
+    var status,message;
     var lender = {
-        Id : req.body.lender
+        Id: req.body.lender
     }
     var borrower = {
-        Id : req.body.borrower
+        Id: req.body.borrower
     }
     var ubid = req.body.ubid;
-    let isOutstanding = checkoutstanding(borrower.Id,con);
+    let isOutstanding = await checkoutstanding(borrower.Id, con);
     if (isOutstanding < 4) {
-        let users = await con.query(`SELECT UUID,Email,Name FROM Users WHERE UUID=${lender.Id} or UUID=${borrower.Id}`);
-        for(var user of users){
-            if(user.UUID == lender.Id){
-                lender["Name"] = user.Name;
-                lender["Email"] = user.Email;
-            } else {
-                borrower["Name"] = user.Name;
-                borrower["Email"] = user.Email;
+        let [available] = await con.query(`SELECT * FROM Borrowed WHERE Book=${ubid} AND Lender=${lender.Id}`)
+        if (available.outstanding != 0) {
+            console.log("Book already Taken"); // sent to post
+            status = false;
+            message = "Book already Taken";
+        }
+        else {
+            let [books] = await con.query(`SELECT Name,Year FROM Books WHERE UBID=${ubid}`);
+            let users = await con.query(`SELECT UUID,Email,Name FROM Users WHERE UUID=${lender.Id} OR UUID=${borrower.Id}`);
+            for (var user of users) {
+                if (user.UUID == lender.Id) {
+                    lender["Name"] = user.Name;
+                    lender["Email"] = user.Email;
+                }
+                else {
+                    borrower["Name"] = user.Name;
+                    borrower["Email"] = user.Email;
+                }
+            }
+            var query = `INSERT INTO ${"`Requested Book`"} (Borrower,Lender,Book,Status) VALUES (${borrower.Id},${lender.Id},${ubid},0)`;
+            //  console.log(query);
+            let addRequest = await con.query(query);
+            var selectquery = `SELECT URID FROM ${"`Requested Book`"} WHERE Borrower=${borrower.Id} AND Lender=${lender.Id} AND Book=${ubid}`;
+            // console.log(selectquery);
+            let [request] = await con.query(selectquery);
+            // var acceptUrl = `https://cisco-backend-cryogenicplanet.c9users.io/request?request=${request.URID}&status=1`;
+            //var declineUrl = `https://cisco-backend-cryogenicplanet.c9users.io/request?request=${request.URID}&status=-1`;
+            var message = `<!DOCTYPE html>
+<html>
+
+<head>
+    <!--Import Google Icon Font-->
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+    <!-- Compiled and minified CSS -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/materialize/0.100.2/css/materialize.min.css">
+    <!--Let browser know website is optimized for mobile-->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+</head>
+
+<body>
+    <!--Import jQuery before materialize.js-->
+    <script type="text/javascript" src="https://code.jquery.com/jquery-3.2.1.min.js"></script>
+    <!-- Compiled and minified JavaScript -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/materialize/0.100.2/js/materialize.min.js"></script>
+    
+      <div class="row">
+        <div class="col s6 offset-s3">
+          <div class="card blue-grey darken-1">
+            <div class="card-content white-text">
+				<div class="row"><span class="card-title center">Book Requested</span></div>
+              <p class="flow-text center">Your Book ${books.Name}(${books.Year}) has been requested by ${borrower.Name}</p>
+            </div>
+            <div class="card-action">
+				<div class="row">
+					<div class="col s4 offset-2"></div>
+				<a href="https://cisco-backend-cryogenicplanet.c9users.io/request?request=${request.URID}&status=1" class="btn-large green">Accept</a>
+              <a href="https://cisco-backend-cryogenicplanet.c9users.io/request?request=${request.URID}&status=-1" class="btn-large red">Decline</a>
+				</div>
+              
+            </div>
+          </div>
+        </div>
+      </div>
+            
+</body>
+
+</html>
+ `; //html goes here
+            if (sendMail(lender.Email, message) == true) {
+                console.log("Email alert sent");
+                status = true;
+                message = "Requested Sent";
             }
         }
-        var message = ""; //html goes here
-        if(sendMail(lender.Email,message)==true){
-            console.log("Email alert sent");
-        }
+    } else  {
+        status = false;
+        message = "Too many outstanding books";
     }
+    res.status(200).json({
+        status : status,
+        message : message
+        });
 }
 
 var checkoutstanding = async function(borrower, con) {
