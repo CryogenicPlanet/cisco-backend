@@ -40,7 +40,7 @@ exports.loginUser = async function(req, res, con) { // Function to Login Users I
     });
 };
 
-exports.followerBooks = async function(uuid, res, con) {
+exports.followerBooks = async function(uuid, res, con) {// Function to check Follower's Books, Again an Async Function
     function NewBook(newuuid, ubid, bookname, author, genre, year, description) {
         this.uuid = newuuid;
         this.ubid = ubid;
