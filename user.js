@@ -51,21 +51,26 @@ exports.followerBooks = async function(uuid, res, con) {
         this.description = description;
         //   this.image = image
     } // Class New Book will all Relevant Details about a Book
-    var newbooks = [];
-    var query = `SELECT * FROM ${"`User's Book`"} WHERE User IN (SELECT Following FROM Following WHERE User=${uuid}) ORDER BY Timestamp LIMIT 10`; //First Query Get All New Books From Followers    
-    let result = await con.query(query);
-    for (var userBook of result) {
-        let [book] = await con.query(`SELECT * FROM Books WHERE UBID=${userBook.Book}`); 
-        let [author] = await con.query(`SELECT Name FROM Authors WHERE UAID=${book.Author}`);
-        let [genre] = await con.query(`SELECT Name FROM Genres WHERE UGID=${book.Genre}`);
-        /*
-        Create a new temp object of type newBook()
-        This temp object is created as many times as the number of new books you followers have added limited at 10 currently, Limit set in intial query
-        */
-        newbooks.push(new NewBook(userBook.User, userBook.Book, book.Name, author.Name, genre.Name, book.Year, userBook.Description));
+    var newbooks = []; // Array of Undefined Length
+    var query = `SELECT * FROM ${"`User's Book`"} WHERE User IN (SELECT Following FROM Following WHERE User=${uuid}) ORDER BY Timestamp LIMIT 10`; 
+    /*
+    Objective of Query: Get All New Books From Followers.
+    Process : Selecting everything (* means everything) From table User's Books Where User(Following), Is any of the followers of the logined User, Then Ordering by Timestamp and Limiting to only 10 books, this limit is temporary.
+    */
+    let result = await con.query(query); // Calls query here use await to wait for the promise to compelete
+    for (var userBook of result) { // For Each loop for each value of result
+        let [book] = await con.query(`SELECT * FROM Books WHERE UBID=${userBook.Book}`); // Getting the Details of the Book, like Name,Year,AuthorID,GenreID,Description,Image(To be done later) From BookID Gotten From the First Query
+        let [author] = await con.query(`SELECT Name FROM Authors WHERE UAID=${book.Author}`); // Getting Author's Name From the AuthorID Gotten From the Second Query
+        let [genre] = await con.query(`SELECT Name FROM Genres WHERE UGID=${book.Genre}`);// Getting Genre Name From GenreID Gotten From the Second Query
 
-    }// End of For Loop
-    res.status(200).json(newbooks);
+        newbooks.push(new NewBook(userBook.User, userBook.Book, book.Name, author.Name, genre.Name, book.Year, userBook.Description));
+        /*
+        Objective : Must all details collected by the queries to an array to be passed to front-end
+        Process : 1. Create an Object of type NewBook(Custom Defined Function Above) with the parameters {newuuid(UUID of the User Followed, Not the One Following Them), ubid, bookname, author, genre, year, description}
+                  2. Push this Object to the end array newbooks[]
+        */
+    }// The Above Stated process is repeated for every followers new book.
+    res.status(200).json(newbooks); // The array of all these book objects is returned.
 };
 
 exports.newUser = function(req, res, con) {
