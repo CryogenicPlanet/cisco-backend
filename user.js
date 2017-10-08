@@ -6,10 +6,10 @@ var randomstring = require("randomstring"); // Cmon What does this suggest?
 var exports = module.exports = {}; //  This is exporting this variable, making it's scope public and accesable my any other file
 
 exports.loginUser = async function(req, res, con) { // Function to Login Users In, Asynchronously(Don't worry about this)
-    var loginMessage, loginStatus; // Varibles to be sent as responses to front-end
+    var loginMessage, loginStatus,loginUser = -1; // Varibles to be sent as responses to front-end
     var email = req.body.email; // Getting email from Post
     var password = req.body.pword; // Getting password from Post
-    let result = await con.query(`SELECT Name,Password,Salt FROM Users WHERE Email ='${email}';`) /*
+    let result = await con.query(`SELECT UUID,Name,Password,Salt FROM Users WHERE Email ='${email}';`) /*
     'let' is a key word similar to 'var', 'await' ensures the promise set my the query is finished before proceding, con is the database connection
     "SELECT Name,Password,Salt FROM Users WHERE Email ='${email}';" gets Name,Password,Salt From the Table Users When the Email in the row is equal to variable email.
     From Now queries, will be commented on only if they are unique in nature
@@ -23,6 +23,7 @@ exports.loginUser = async function(req, res, con) { // Function to Login Users I
             console.log("Login Succesfull"); 
             loginMessage = "Login Succesfull"; // Assigning return Variable Success Values
             loginStatus = true;
+            loginUser = result[0].UUID;
         }
         else { // Doesn't Match
             console.log("Wrong Password"); 
@@ -36,7 +37,8 @@ exports.loginUser = async function(req, res, con) { // Function to Login Users I
     }
     res.status(201).json({ // Sending the Data back to Front-End
         message: loginMessage,
-        status: loginStatus
+        status: loginStatus,
+        uuid : loginUser
     });
 };
 
