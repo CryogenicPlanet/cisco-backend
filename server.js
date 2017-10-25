@@ -17,6 +17,7 @@ var app = express();
 app.use(express.logger());
 app.use(cors());
 app.use(bodyParser.json());
+app.set('jwtTokenSecret', 'D2A8EC7BF22AECBEB745FDAAA892CDCD8A678D4E94C6452D58AD92C4D861A0C0839DEA1057CA539810FADF9806090D9EB6F610FE1AF6BC2A0DEA3D69455116AE');
 var server = app.listen(port);
 
 
@@ -40,7 +41,7 @@ Handle the request send for data or pages from front-end, browser, user below
 */
 //Handling Requests of type POST, used to send Data to the server or database
 app.post('/login', function(req, res) { // Request to Log User IN
-    user.loginUser(req, res, con); // Calling function .loginUser() of Object User passing the input, output and database connection
+    user.loginUser(req, res, con,app.get('jwtTokenSecret')); // Calling function .loginUser() of Object User passing the input, output and database connection
 });
 app.post('/Signup', function(req, res) {// Request to Sign User Up
     user.newUser(req, res, con); // Calling function .newUser() of Object User passing the input, output and database connection
@@ -54,5 +55,5 @@ app.get('/verify', function(req, res) { // Request to verify email after signup,
     user.verify(req, res, con); // Calling function .verify() of Object User passing the input, output and database connection
 });
 app.get('/newbooks', function(req, res) { // Request to get a User's follower's New Books to be displayed on the timeline. This request is ajax call from front-end made after succesful login
-    user.followerBooks(req.query.uuid, res, con); // Calling function .followerBooks() of Object User passing the uuid(unique user id), output and database connection
+    user.followerBooks(req, res, con,app.get('jwtTokenSecret')); // Calling function .followerBooks() of Object User passing the uuid(unique user id), output and database connection
 });

@@ -1,60 +1,76 @@
 //Libraries
+var jwt = require('jsonwebtoken'); // Json Web Token Library; Used for authentication
 var sha512 = require('sha512'); // Sha512 Library, Sha512 is a hash
-var nodemailer = require('nodemailer');// Nodemailer is an SMTP mailer for node
+var nodemailer = require('nodemailer'); // Nodemailer is an SMTP mailer for node
 var randomstring = require("randomstring"); // Cmon What does this suggest?
 
 var exports = module.exports = {}; //  This is exporting this variable, making it's scope public and accesable my any other file
 
-exports.loginUser = async function(req, res, con) { // Function to Login Users In, Asynchronously(Don't worry about this)
-    var loginMessage, loginStatus,loginUser = -1; // Varibles to be sent as responses to front-end
+exports.loginUser = async function(req, res, con, secret) { // Function to Login Users In, Asynchronously(Don't worry about this)
     var email = req.body.email; // Getting email from Post
     var password = req.body.pword; // Getting password from Post
-    let result = await con.query(`SELECT UUID,Name,Password,Salt FROM Users WHERE Email ='${email}';`) /*
-    'let' is a key word similar to 'var', 'await' ensures the promise set my the query is finished before proceding, con is the database connection
-    "SELECT Name,Password,Salt FROM Users WHERE Email ='${email}';" gets Name,Password,Salt From the Table Users When the Email in the row is equal to variable email.
-    From Now queries, will be commented on only if they are unique in nature
-    */ 
+    let result = await con.query(`SELECT UUID,Name,Password,Salt FROM Users WHERE Email ='${email}';`)
+    /*
+       'let' is a key word similar to 'var', 'await' ensures the promise set my the query is finished before proceding, con is the database connection
+       "SELECT Name,Password,Salt FROM Users WHERE Email ='${email}';" gets Name,Password,Salt From the Table Users When the Email in the row is equal to variable email.
+       From Now queries, will be commented on only if they are unique in nature
+       */
     if (result != "") { // Check if there is any User exsisting with that email or not
         var key = result[0].Salt; // Assign the value of the Salt from the first result to key, this case emails should be unique and you should get only one result
         var hasher = sha512.hmac(key); // Using Sha512 hasher
         var hash = hasher.finalize(password); // Using Sha512 hasher
         var finalPassword = hash.toString('hex'); // Converting the hash to a readable base16 string
         if (finalPassword == result[0].Password) { // Checking if thet match
-            console.log("Login Succesfull"); 
-            loginMessage = "Login Succesfull"; // Assigning return Variable Success Values
-            loginStatus = true;
-            loginUser = result[0].UUID;
+            console.log("Login Succesfull");
+            var payload = {
+                uuid: result[0].UUID
+            };
+            var token = jwt.sign(payload, secret);
+            res.status(201).json({ // Sending the Data back to Front-End
+                message: "Succesfull",
+                token: token
+            });
+
         }
         else { // Doesn't Match
-            console.log("Wrong Password"); 
-            loginMessage = "Wrong Password"; //  Assigning return Variable Failue Values and Type of Failure
-            loginStatus = false;
+            console.log("Wrong Password");
+            res.status(400).json({
+                message: "Wrong Password"
+            });
         }
     }
-    else {// No user Found
-        loginMessage = "Email not found";//  Assigning return Variable Failue Values and Type of Failure 
-        loginStatus = false;
+    else { // No user Found
+        res.status(400).json({
+            message: "Email not Found"
+        });
     }
-    res.status(201).json({ // Sending the Data back to Front-End
-        message: loginMessage,
-        status: loginStatus,
-        uuid : loginUser
-    });
+
 };
 
-exports.followerBooks = async function(uuid, res, con) {// Function to check Follower's Books, Again an Async Function
-    function NewBook(newuuid, ubid, bookname, author, genre, year, description) {
+exports.followerBooks = async function(req, res, con,secret) { // Function to check Follower's Books, Again an Async Function
+var token = req.body.token || req.query.token || req.headers['x-access-token'];
+var uuid = -1;
+jwt.verify(token,secret, function(err, decoded) {      
+      if (err) {
+        return res.json({ success: false, message: 'Failed to authenticate token.' });    
+      } else {
+        // Everything is good
+        uuid = decoded.uuid;
+      }
+    });
+    function NewBook(newuuid, ubid, bookname, author, genre, year, description, username) {
         this.uuid = newuuid;
         this.ubid = ubid;
-        // this.username = username;
+        this.username = username;
         this.bookname = bookname;
         this.author = author;
         this.genre = genre;
+        this.year = year;
         this.description = description;
         //   this.image = image
     } // Class New Book will all Relevant Details about a Book
     var newbooks = []; // Array of Undefined Length
-    var query = `SELECT * FROM ${"`User's Book`"} WHERE User IN (SELECT Following FROM Following WHERE User=${uuid}) ORDER BY Timestamp LIMIT 10`; 
+    var query = `SELECT * FROM ${"`User's Book`"} WHERE User IN (SELECT Following FROM Following WHERE User=${uuid}) ORDER BY Timestamp LIMIT 10`;
     /*
     Objective of Query: Get All New Books From Followers.
     Process : Selecting everything (* means everything) From table User's Books Where User(Following), Is any of the followers of the logined User, Then Ordering by Timestamp and Limiting to only 10 books, this limit is temporary.
@@ -63,15 +79,16 @@ exports.followerBooks = async function(uuid, res, con) {// Function to check Fol
     for (var userBook of result) { // For Each loop for each value of result
         let [book] = await con.query(`SELECT * FROM Books WHERE UBID=${userBook.Book}`); // Getting the Details of the Book, like Name,Year,AuthorID,GenreID,Description,Image(To be done later) From BookID Gotten From the First Query
         let [author] = await con.query(`SELECT Name FROM Authors WHERE UAID=${book.Author}`); // Getting Author's Name From the AuthorID Gotten From the Second Query
-        let [genre] = await con.query(`SELECT Name FROM Genres WHERE UGID=${book.Genre}`);// Getting Genre Name From GenreID Gotten From the Second Query
-
-        newbooks.push(new NewBook(userBook.User, userBook.Book, book.Name, author.Name, genre.Name, book.Year, userBook.Description));
+        let [genre] = await con.query(`SELECT Name FROM Genres WHERE UGID=${book.Genre}`); // Getting Genre Name From GenreID Gotten From the Second Query
+        let [user] = await con.query(`SELECT Name FROM Users WHERE UUID=${userBook.User}`);
+        newbooks.push(new NewBook(userBook.User, userBook.Book, book.Name, author.Name, genre.Name, book.Year, userBook.Description, user.Name));
         /*
         Objective : Must all details collected by the queries to an array to be passed to front-end
         Process : 1. Create an Object of type NewBook(Custom Defined Function Above) with the parameters {newuuid(UUID of the User Followed, Not the One Following Them), ubid, bookname, author, genre, year, description}
                   2. Push this Object to the end array newbooks[]
         */
-    }// The Above Stated process is repeated for every followers new book.
+    } // The Above Stated process is repeated for every followers new book.
+    
     res.status(200).json(newbooks); // The array of all these book objects is returned.
 };
 
@@ -183,4 +200,3 @@ exports.verify = function(req, res, con) {
         }
     });
 };
-

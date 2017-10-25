@@ -2,7 +2,8 @@ var nodemailer = require('nodemailer');
 var exports = module.exports = {};
 
 exports.borrowBooks = async function(req, res, con) {
-    var status,resMessage;
+    var isAvailable = false;
+    var status,resMessage = "Too many outstanding books";
     var lender = {
         Id: req.body.lender
     }
@@ -12,13 +13,23 @@ exports.borrowBooks = async function(req, res, con) {
     var ubid = req.body.ubid;
     let isOutstanding = await checkoutstanding(borrower.Id, con);
     if (isOutstanding < 4) {
+        //console.log(`SELECT * FROM Borrowed WHERE Book=${ubid} AND Lender=${lender.Id}`);
         let [available] = await con.query(`SELECT * FROM Borrowed WHERE Book=${ubid} AND Lender=${lender.Id}`)
+        try {
+        if(available){
         if (available.outstanding != 0) {
             console.log("Book already Taken"); // sent to post
             status = false;
             resMessage = "Book already Taken";
+        } else {
+            isAvailable = true;
         }
-        else {
+        
+        }else{
+            console.log("No results");
+            isAvailable = true;
+        }
+        if(isAvailable) {
             let [books] = await con.query(`SELECT Name,Year FROM Books WHERE UBID=${ubid}`);
             let users = await con.query(`SELECT UUID,Email,Name FROM Users WHERE UUID=${lender.Id} OR UUID=${borrower.Id}`);
             for (var user of users) {
@@ -80,22 +91,20 @@ exports.borrowBooks = async function(req, res, con) {
 
 </html>
  `; //html goes here
-            if (sendMail(lender.Email, message) == true) {
-                console.log("Email alert sent");
-                status = true;
-                resMessage = "Requested Sent";
-            }
+    sendMail(lender.Email, message,res);
+    
         }
-    } else  {
-        status = false;
-        resMessage = "Too many outstanding books";
+            
+        } catch (error)  {
+        console.log("Error :" +error.toString());
     }
-    res.status(200).json({
-        status : status,
+    
+}  else  {
+        res.status(400).json({
         message : resMessage
         });
+    }
 }
-
 var checkoutstanding = async function(borrower, con) {
     var isOutstanding = 0;
     let outstanding = await con.query(`SELECT Outstanding FROM Borrowed WHERE Borrower=${borrower}`);
@@ -106,8 +115,7 @@ var checkoutstanding = async function(borrower, con) {
     }
     return isOutstanding;
 }
-
-function sendMail(email, message) {
+function sendMail(email, message,res) {
     // Generate test SMTP service account from ethereal.email
     // Only needed if you don't have a real mail account for testing
     nodemailer.createTestAccount((err, account) => {
@@ -138,7 +146,10 @@ function sendMail(email, message) {
                 return console.log(error);
             }
             console.log('Message sent: %s', info.messageId);
-            return true;
+             console.log("Email alert sent");
+               res.status(200).json({
+                    message : "Email alert sent"
+                    });
             // Preview only available when sending through an Ethereal account
             console.log('Preview URL: %s', nodemailer.getTestMessageUrl(info));
 
@@ -146,4 +157,7 @@ function sendMail(email, message) {
             // Preview URL: https://ethereal.email/message/WaQKMgKddxQDoou...
         });
     });
+}
+exports.updateStatus = async function(req,res,con){
+    
 }
