@@ -200,3 +200,45 @@ exports.verify = function(req, res, con) {
         }
     });
 };
+
+exports.userDetails = async function(req,res,con,secret) {
+    var token = req.body.token || req.query.token || req.headers['x-access-token'];
+    var uuid;
+    jwt.verify(token,secret, function(err, decoded) {      
+      if (err) {
+        return res.json({ success: false, message: 'Failed to authenticate token.' });    
+      } else {
+        // Everything is good
+        uuid = decoded.uuid;
+      }
+    });
+    var newbooks = [];
+     function NewBook(ubid, bookname, author, genre, year, description) {
+        this.ubid = ubid;
+        this.bookname = bookname;
+        this.author = author;
+        this.genre = genre;
+        this.year = year;
+        this.description = description;
+        //   this.image = image
+    }
+    console.log(uuid);
+    // Get Basic User Details
+    let [user] = await con.query(`SELECT * FROM Users WHERE UUID=${uuid}`);
+    let userbooks = await con.query(`SELECT * FROM ${"`User's Book`"} WHERE User=${uuid}`);
+    
+    for(var userBook of userbooks ){
+    let [book] = await con.query(`SELECT * FROM Books WHERE UBID=${userBook.Book}`);
+    let [author] = await con.query(`SELECT Name FROM Authors WHERE UAID=${book.Author}`); // Getting Author's Name From the AuthorID Gotten From the Second Query
+    let [genre] = await con.query(`SELECT Name FROM Genres WHERE UGID=${book.Genre}`);
+    newbooks.push(new NewBook(book.Book, book.Name, author.Name, genre.Name, book.Year, book.Description, user.Name));
+    }
+    var response = {
+        name : user.Name,
+        books : newbooks
+    }
+    console.log(response);
+    res.status(200).json({
+        response
+    })
+}

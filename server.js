@@ -30,16 +30,7 @@ mysql.createConnection({
     password: "",
     database: "c9"
 }).then(function(connection) { con = connection });
-/* Old redudant Db Connection Code
- con.connect(function(err) {
 
-     if (err) console.log("Error :" + err);
-else console.log("Successful Db Con");
- }); */
-
-/*HTTP Request Handling
-Handle the request send for data or pages from front-end, browser, user below
-*/
 //Handling Requests of type POST, used to send Data to the server or database
 app.post('/login', function(req, res) { // Request to Log User IN
     user.loginUser(req, res, con,app.get('jwtTokenSecret')); // Calling function .loginUser() of Object User passing the input, output and database connection
@@ -60,4 +51,7 @@ app.get('/newbooks', function(req, res) { // Request to get a User's follower's 
 });
 app.get('/search',function(req, res) {
     search.getSearch(req,res,con);
+});
+app.get('/userDetails', function(req, res) {
+    user.userDetails(req,res,con,app.get('jwtTokenSecret'));
 })
