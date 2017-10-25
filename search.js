@@ -1,16 +1,25 @@
 //Imports
-var sql = require('mysql');
-var solr = require('solr-client');
-var client = solr.createClient();
-var express = require('express');
-var app = express();
+const fs = require('fs');
+const Fuse = require("fuse.js");
 var exports = module.exports = {};
 
 exports.getSearch = function(req, res, con) {
-
-con.query("SELECT * FROM Books WHERE Name ='"+ req.body.name + "'", function (err, result, fields) {
-    if (err) throw err;
-    console.log(result);
-  });
+    var options = {
+  shouldSort: true,
+  threshold: 0.6,
+  location: 0,
+  distance: 100,
+  maxPatternLength: 32,
+  minMatchCharLength: 1,
+  keys: [
+    "name",
+    "author"
+]
+};
+console.log("pre");
+var book = JSON.parse(fs.readFileSync('books.json', 'utf8'));
+var fuse = new Fuse(book, options); // "list" is the item array
+var result = fuse.search("of");
+console.log(result);
 }
 

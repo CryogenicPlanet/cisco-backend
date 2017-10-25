@@ -1,14 +1,27 @@
 var nodemailer = require('nodemailer');
+var jwt = require('jsonwebtoken'); // Json Web Token Library; Used for authentication
 var exports = module.exports = {};
 
-exports.borrowBooks = async function(req, res, con) {
+exports.borrowBooks = async function(req, res, con, secret) {
     var isAvailable = false;
-    var status,resMessage = "Too many outstanding books";
+    var status, resMessage = "Too many outstanding books";
     var lender = {
         Id: req.body.lender
     }
+    var token = req.body.token || req.query.token || req.headers['x-access-token'];
+    var uuid = -1;
+    jwt.verify(token, secret, function(err, decoded) {
+        if (err) {
+            return res.json({ success: false, message: 'Failed to authenticate token.' });
+            process.exit(0);
+        }
+        else {
+            // Everything is good
+            uuid = decoded.uuid;
+        }
+    });
     var borrower = {
-        Id: req.body.borrower
+        Id: uuid
     }
     var ubid = req.body.ubid;
     let isOutstanding = await checkoutstanding(borrower.Id, con);
@@ -16,41 +29,43 @@ exports.borrowBooks = async function(req, res, con) {
         //console.log(`SELECT * FROM Borrowed WHERE Book=${ubid} AND Lender=${lender.Id}`);
         let [available] = await con.query(`SELECT * FROM Borrowed WHERE Book=${ubid} AND Lender=${lender.Id}`)
         try {
-        if(available){
-        if (available.outstanding != 0) {
-            console.log("Book already Taken"); // sent to post
-            status = false;
-            resMessage = "Book already Taken";
-        } else {
-            isAvailable = true;
-        }
-        
-        }else{
-            console.log("No results");
-            isAvailable = true;
-        }
-        if(isAvailable) {
-            let [books] = await con.query(`SELECT Name,Year FROM Books WHERE UBID=${ubid}`);
-            let users = await con.query(`SELECT UUID,Email,Name FROM Users WHERE UUID=${lender.Id} OR UUID=${borrower.Id}`);
-            for (var user of users) {
-                if (user.UUID == lender.Id) {
-                    lender["Name"] = user.Name;
-                    lender["Email"] = user.Email;
+            if (available) {
+                if (available.outstanding != 0) {
+                    console.log("Book already Taken"); // sent to post
+                    status = false;
+                    resMessage = "Book already Taken";
                 }
                 else {
-                    borrower["Name"] = user.Name;
-                    borrower["Email"] = user.Email;
+                    isAvailable = true;
                 }
+
             }
-            var query = `INSERT INTO ${"`Requested Book`"} (Borrower,Lender,Book,Status) VALUES (${borrower.Id},${lender.Id},${ubid},0)`;
-            //  console.log(query);
-            let addRequest = await con.query(query);
-            var selectquery = `SELECT URID FROM ${"`Requested Book`"} WHERE Borrower=${borrower.Id} AND Lender=${lender.Id} AND Book=${ubid}`;
-            // console.log(selectquery);
-            let [request] = await con.query(selectquery);
-            // var acceptUrl = `https://cisco-backend-cryogenicplanet.c9users.io/request?request=${request.URID}&status=1`;
-            //var declineUrl = `https://cisco-backend-cryogenicplanet.c9users.io/request?request=${request.URID}&status=-1`;
-            var message = `<!DOCTYPE html>
+            else {
+                console.log("No results");
+                isAvailable = true;
+            }
+            if (isAvailable) {
+                let [books] = await con.query(`SELECT Name,Year FROM Books WHERE UBID=${ubid}`);
+                let users = await con.query(`SELECT UUID,Email,Name FROM Users WHERE UUID=${lender.Id} OR UUID=${borrower.Id}`);
+                for (var user of users) {
+                    if (user.UUID == lender.Id) {
+                        lender["Name"] = user.Name;
+                        lender["Email"] = user.Email;
+                    }
+                    else {
+                        borrower["Name"] = user.Name;
+                        borrower["Email"] = user.Email;
+                    }
+                }
+                var query = `INSERT INTO ${"`Requested Book`"} (Borrower,Lender,Book,Status) VALUES (${borrower.Id},${lender.Id},${ubid},0)`;
+                //  console.log(query);
+                let addRequest = await con.query(query);
+                var selectquery = `SELECT URID FROM ${"`Requested Book`"} WHERE Borrower=${borrower.Id} AND Lender=${lender.Id} AND Book=${ubid}`;
+                // console.log(selectquery);
+                let [request] = await con.query(selectquery);
+                // var acceptUrl = `https://cisco-backend-cryogenicplanet.c9users.io/request?request=${request.URID}&status=1`;
+                //var declineUrl = `https://cisco-backend-cryogenicplanet.c9users.io/request?request=${request.URID}&status=-1`;
+                var message = `<!DOCTYPE html>
 <html>
 
 <head>
@@ -91,17 +106,19 @@ exports.borrowBooks = async function(req, res, con) {
 
 </html>
  `; //html goes here
-    sendMail(lender.Email, message,res);
-    
+                sendMail(lender.Email, message, res);
+
+            }
+
         }
-            
-        } catch (error)  {
-        console.log("Error :" +error.toString());
+        catch (error) {
+            console.log("Error :" + error.toString());
+        }
+
     }
-    
-}  else  {
+    else {
         res.status(400).json({
-        message : resMessage
+            message: resMessage
         });
     }
 }
@@ -115,7 +132,8 @@ var checkoutstanding = async function(borrower, con) {
     }
     return isOutstanding;
 }
-function sendMail(email, message,res) {
+
+function sendMail(email, message, res) {
     // Generate test SMTP service account from ethereal.email
     // Only needed if you don't have a real mail account for testing
     nodemailer.createTestAccount((err, account) => {
@@ -146,10 +164,10 @@ function sendMail(email, message,res) {
                 return console.log(error);
             }
             console.log('Message sent: %s', info.messageId);
-             console.log("Email alert sent");
-               res.status(200).json({
-                    message : "Email alert sent"
-                    });
+            console.log("Email alert sent");
+            res.status(200).json({
+                message: "Email alert sent"
+            });
             // Preview only available when sending through an Ethereal account
             console.log('Preview URL: %s', nodemailer.getTestMessageUrl(info));
 
@@ -158,6 +176,6 @@ function sendMail(email, message,res) {
         });
     });
 }
-exports.updateStatus = async function(req,res,con){
-    
+exports.updateStatus = async function(req, res, con) {
+
 }

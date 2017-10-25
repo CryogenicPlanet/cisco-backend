@@ -11,6 +11,7 @@ var cors = require("cors"); // Library for handling access headers
 //Modules
 var user = require("./user.js"); // Object of our module User.js
 var borrow = require("./borrow.js") // Object of our module Borrow.js
+var search = require("./search.js")
 //Server Don't worry about this
 var express = require('express'); // Framework for Node
 var app = express();
@@ -47,7 +48,7 @@ app.post('/Signup', function(req, res) {// Request to Sign User Up
     user.newUser(req, res, con); // Calling function .newUser() of Object User passing the input, output and database connection
 });
 app.post('/borrow',function(req, res) {// Request to Borrow a Book
-    borrow.borrowBooks(req,res,con); // Calling function .borrowBooks() of Object borrow passing the input, output and database connection
+    borrow.borrowBooks(req,res,con,app.get('jwtTokenSecret')); // Calling function .borrowBooks() of Object borrow passing the input, output and database connection
 });
 
 // Handling Requests of type GET, used to get Data from the server or databae
@@ -57,3 +58,6 @@ app.get('/verify', function(req, res) { // Request to verify email after signup,
 app.get('/newbooks', function(req, res) { // Request to get a User's follower's New Books to be displayed on the timeline. This request is ajax call from front-end made after succesful login
     user.followerBooks(req, res, con,app.get('jwtTokenSecret')); // Calling function .followerBooks() of Object User passing the uuid(unique user id), output and database connection
 });
+app.get('/search',function(req, res) {
+    search.getSearch(req,res,con);
+})

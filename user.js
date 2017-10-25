@@ -47,7 +47,7 @@ exports.loginUser = async function(req, res, con, secret) { // Function to Login
 
 };
 
-exports.followerBooks = async function(req, res, con,secret) { // Function to check Follower's Books, Again an Async Function
+exports.followerBooks = async function(req, res, con,secret){ // Function to check Follower's Books, Again an Async Function
 var token = req.body.token || req.query.token || req.headers['x-access-token'];
 var uuid = -1;
 jwt.verify(token,secret, function(err, decoded) {      
