@@ -58,7 +58,7 @@ jwt.verify(token,secret, function(err, decoded) {
         uuid = decoded.uuid;
       }
     });
-    function NewBook(newuuid, ubid, bookname, author, genre, year, description, username) {
+    function NewBook(newuuid, ubid, bookname, author, genre, year, description, username,image) {
         this.uuid = newuuid;
         this.ubid = ubid;
         this.username = username;
@@ -66,11 +66,12 @@ jwt.verify(token,secret, function(err, decoded) {
         this.author = author;
         this.genre = genre;
         this.year = year;
+        this.image = image;
         this.description = description;
         //   this.image = image
     } // Class New Book will all Relevant Details about a Book
     var newbooks = []; // Array of Undefined Length
-    var query = `SELECT * FROM ${"`User's Book`"} WHERE User IN (SELECT Following FROM Following WHERE User=${uuid}) ORDER BY Timestamp LIMIT 10`;
+    var query = `SELECT * FROM ${"`User's Book`"} WHERE User IN (SELECT Following FROM Following WHERE User=${uuid}) ORDER BY Timestamp DESC LIMIT 10`;
     /*
     Objective of Query: Get All New Books From Followers.
     Process : Selecting everything (* means everything) From table User's Books Where User(Following), Is any of the followers of the logined User, Then Ordering by Timestamp and Limiting to only 10 books, this limit is temporary.
@@ -81,7 +82,7 @@ jwt.verify(token,secret, function(err, decoded) {
         let [author] = await con.query(`SELECT Name FROM Authors WHERE UAID=${book.Author}`); // Getting Author's Name From the AuthorID Gotten From the Second Query
         let [genre] = await con.query(`SELECT Name FROM Genres WHERE UGID=${book.Genre}`); // Getting Genre Name From GenreID Gotten From the Second Query
         let [user] = await con.query(`SELECT Name FROM Users WHERE UUID=${userBook.User}`);
-        newbooks.push(new NewBook(userBook.User, userBook.Book, book.Name, author.Name, genre.Name, book.Year, userBook.Description, user.Name));
+        newbooks.push(new NewBook(userBook.User, userBook.Book, book.Name, author.Name, genre.Name, book.Year, userBook.Description, user.Name,userBook.Image));
         /*
         Objective : Must all details collected by the queries to an array to be passed to front-end
         Process : 1. Create an Object of type NewBook(Custom Defined Function Above) with the parameters {newuuid(UUID of the User Followed, Not the One Following Them), ubid, bookname, author, genre, year, description}
