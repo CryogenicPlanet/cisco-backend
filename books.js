@@ -14,14 +14,24 @@ exports.addBook = async function(req, res, con, secret) {
             uuid = decoded.uuid;
         }
     }); // Get's User Id From JWT Token
-
-    if (req.body.ubid) { // If Book Already Exists and User Chooses This
-        addUserbook(con, uuid, req.body.ubid, req.body.description, req.body.image);
-        process.exit(0); // Exits Code Here
-    }
-    // By This Point We know book doesn't already Exsist
-    console.log(req.body);
     var book = {};
+    console.log(req.body);
+    if (req.body.image) {
+        book.image = req.body.image;
+    }
+    else {
+        book.image = "/Images/books.jpeg";
+    }
+    if (req.body.ubid) { // If Book Already Exists and User Chooses This
+        addUserbook(con, uuid, req.body.ubid, req.body.description, book.image);
+         var message = {
+                message: "Sucessfully Added"
+            };
+        res.status(200).json(message); // Exits Code Here
+    } else {
+    // By This Point We know book doesn't already Exsist
+
+    
     if (req.body.uaid) { // Author Already Exsists
         book.uaid = req.body.uaid;
         let [author] = await con.query(`SELECT Name FROM Authors WHERE UAID=${book.uaid}`);
@@ -48,18 +58,12 @@ exports.addBook = async function(req, res, con, secret) {
     book.name = req.body.name;
     book.year = req.body.year;
     book.description = req.body.description;
-    if (req.body.image) {
-        book.image = req.body.image;
-    }
-    else {
-        book.image = "/Images/books.jpeg";
-    }
     if (addNewBookDb(con, book.name, book.uaid, book.ugid, book.year)) {
         let [addedbook] = await con.query(`SELECT UBID FROM Books WHERE Name="${book.name}"`);
         book.ubid = addedbook.UBID;
 
         addUserbook(con, uuid, book.ubid, book.description, book.image);
-        if (addNewBookFile(book.ubid, book.name, book.author, book.genre,book.year)) {
+        if (addNewBookFile(book.ubid, book.name, book.author, book.genre, book.year)) {
             var message = {
                 message: "Sucessfully Added"
             };
@@ -68,7 +72,7 @@ exports.addBook = async function(req, res, con, secret) {
     }
 
 }
-
+}
 var addUserbook = async function(con, uuid, ubid, description, image) {
     let [addUserBooks] = await con.query(`INSERT INTO ${"`User's Book`"} (User,Book,Description,Image) VALUES (${uuid},${ubid},"${description}","${image}")`);
 }

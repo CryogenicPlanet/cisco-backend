@@ -15,12 +15,12 @@ var search = require("./search.js")
 var books = require("./books.js")
 //Server Don't worry about this
 var express = require('express'); // Framework for Node
-var app = express();
+var app = express(); // Establishing Express App
 app.use(express.logger());
-app.use(cors());
-app.use(bodyParser.json());
-app.set('jwtTokenSecret', 'D2A8EC7BF22AECBEB745FDAAA892CDCD8A678D4E94C6452D58AD92C4D861A0C0839DEA1057CA539810FADF9806090D9EB6F610FE1AF6BC2A0DEA3D69455116AE');
-var server = app.listen(port);
+app.use(cors()); // Cors to Handle Url Authentication 
+app.use(bodyParser.json()); // Using Body Parser
+app.set('jwtTokenSecret', 'D2A8EC7BF22AECBEB745FDAAA892CDCD8A678D4E94C6452D58AD92C4D861A0C0839DEA1057CA539810FADF9806090D9EB6F610FE1AF6BC2A0DEA3D69455116AE'); // JWT Secret
+var server = app.listen(port); // Set Port
 
 
 //DataBase connection using promises
@@ -58,4 +58,13 @@ app.get('/search',function(req, res) {
 });
 app.get('/userDetails', function(req, res) {
     user.userDetails(req,res,con,app.get('jwtTokenSecret'));
+});
+app.get('/searchBooks', function(req, res) {
+   search.getBooks(req,res,con); 
+});
+app.get('/searchAuthor',function(req, res) {
+   search.getAuthor(req,res,con); 
+});
+app.get('/searchGenre', function(req, res) {
+   search.getGenre(req,res,con); 
 });

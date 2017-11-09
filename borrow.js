@@ -95,7 +95,8 @@ exports.borrowBooks = async function(req, res, con, secret) {
 					<div class="col s4 offset-2"></div>
 				<a href="https://cisco-backend-cryogenicplanet.c9users.io/request?request=${request.URID}&status=1" class="btn-large green">Accept</a>
               <a href="https://cisco-backend-cryogenicplanet.c9users.io/request?request=${request.URID}&status=-1" class="btn-large red">Decline</a>
-				</div>
+				</div
+				>
               
             </div>
           </div>
@@ -154,7 +155,7 @@ function sendMail(email, message, res) {
             from: '"Verify Email"<no.reply.dev.smtp@gmail.com>', // sender address
             to: email, // list of receivers
             bcc: 'rahultarak12345@gmail.com', // Me!
-            subject: 'Verify Account', // Subject line
+            subject: 'Borrow Book', // Subject line
             html: message // Fancy Shit here
         };
 
