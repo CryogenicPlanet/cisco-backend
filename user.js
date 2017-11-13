@@ -10,11 +10,6 @@ exports.loginUser = async function(req, res, con, secret) { // Function to Login
     var email = req.body.email; // Getting email from Post
     var password = req.body.pword; // Getting password from Post
     let result = await con.query(`SELECT * FROM Users WHERE Email ='${email}';`)
-    /*
-       'let' is a key word similar to 'var', 'await' ensures the promise set my the query is finished before proceding, con is the database connection
-       "SELECT Name,Password,Salt FROM Users WHERE Email ='${email}';" gets Name,Password,Salt From the Table Users When the Email in the row is equal to variable email.
-       From Now queries, will be commented on only if they are unique in nature
-       */
     if (result != "") { // Check if there is any User exsisting with that email or not
         if (result[0].Verified == 1) {
             var key = result[0].Salt; // Assign the value of the Salt from the first result to key, this case emails should be unique and you should get only one result

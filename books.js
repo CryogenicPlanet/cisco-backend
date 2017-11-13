@@ -76,7 +76,6 @@ exports.addBook = async function(req, res, con, secret) {
 var addUserbook = async function(con, uuid, ubid, description, image) {
     let [addUserBooks] = await con.query(`INSERT INTO ${"`User's Book`"} (User,Book,Description,Image) VALUES (${uuid},${ubid},"${description}","${image}")`);
 }
-
 var addNewBookDb = async function(con, name, uaid, ugid, year) {
     try {
         let [addBookDB] = await con.query(`INSERT INTO Books (Name,Author,Genre,Year) VALUES ("${name}",${uaid},${ugid},${year})`);
@@ -87,7 +86,6 @@ var addNewBookDb = async function(con, name, uaid, ugid, year) {
     }
 
 }
-
 var addNewBookFile = async function(ubid, name, author, genre, year) {
     var books = JSON.parse(fs.readFileSync('books.json', 'utf8'));
     var newBook = {

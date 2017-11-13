@@ -4,7 +4,7 @@ const Fuse = require("fuse.js");
 var exports = module.exports = {};
 
 exports.getSearch = function(req, res, con) {
-  
+
     var options = {
         shouldSort: true,
         threshold: 0.35,
@@ -44,7 +44,7 @@ exports.getSearch = function(req, res, con) {
     }
 }
 exports.getBooks = function(req, res, con) {
-      console.log(req.query.search)
+    console.log(req.query.search)
     var options = {
         shouldSort: true,
         threshold: 0.2,
@@ -109,7 +109,7 @@ exports.getGenre = async function(req, res, con) {
         }]
     };
     console.log(req.query.search);
-  let genre = await con.query(`SELECT * FROM Genres`);
+    let genre = await con.query(`SELECT * FROM Genres`);
     var fuse = new Fuse(genre, options); // "list" is the item array
     var result = fuse.search(req.query.search);
     if (result) {
