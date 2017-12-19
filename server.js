@@ -13,6 +13,7 @@ var user = require("./user.js"); // Object of our module User.js
 var borrow = require("./borrow.js") // Object of our module Borrow.js
 var search = require("./search.js")
 var books = require("./books.js")
+var mail = require("./mail.js")
 //Server Don't worry about this
 var express = require('express'); // Framework for Node
 var app = express(); // Establishing Express App
@@ -67,4 +68,7 @@ app.get('/searchAuthor',function(req, res) {
 });
 app.get('/searchGenre', function(req, res) {
    search.getGenre(req,res,con); 
+});
+app.get('/showAuthor',function(req, res) {
+    books.getAuthor(req,res,con);
 });

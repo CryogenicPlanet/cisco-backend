@@ -97,6 +97,7 @@ exports.followerBooks = async function(req, res, con, secret) { // Function to c
 };
 
 exports.newUser = function(req, res, con) {
+
     var Status, Message;
     var name = req.body.name;
     var email = req.body.email;
