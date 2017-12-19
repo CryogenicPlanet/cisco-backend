@@ -11,16 +11,15 @@
   },
   "license": "ISC",
   "dependencies": {
-    "body-parser": "^1.18.1",
+    "body-parser": "^1.18.2",
     "cors": "^2.8.4",
     "express": "~3.2.4",
+    "fuse.js": "^3.2.0",
     "getenv": "^0.7.0",
-    "mysql": "^2.14.1",
-    "nodemailer": "^4.1.0",
+    "jsonwebtoken": "^8.1.0",
+    "nodemailer": "^4.2.0",
     "promise-mysql": "^3.1.0",
     "randomstring": "^1.1.5",
-    "sha512": "0.0.1",
-    "solr": "^0.3.0",
-    "solr-client": "^0.7.0"
+    "sha512": "0.0.1"
   }
 }
