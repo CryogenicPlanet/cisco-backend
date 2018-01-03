@@ -30,7 +30,7 @@ exports.borrowBooks = async function(req, res, con, secret) {
         let [available] = await con.query(`SELECT * FROM Borrowed WHERE Book=${ubid} AND Lender=${lender.Id}`)
         try {
             if (available) {
-                if (available.outstanding != 0) {
+                if (available.Outstanding == 1) {
                     console.log("Book already Taken"); // sent to post
                     status = false;
                     resMessage = "Book already Taken";
@@ -127,7 +127,7 @@ var checkoutstanding = async function(borrower, con) {
     var isOutstanding = 0;
     let outstanding = await con.query(`SELECT Outstanding FROM Borrowed WHERE Borrower=${borrower}`);
     for (var outstander of outstanding) {
-        if (outstander.outstanding != 0) {
+        if (outstander.Outstanding == 1) {
             isOutstanding += 1;
         }
     }

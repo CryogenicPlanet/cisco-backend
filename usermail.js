@@ -1,15 +1,11 @@
-var nodemailer = require('nodemailer');
+const nodemailer = require('nodemailer');
 
 var exports = module.exports = {};
 
-exports.mailTest = function mail(){
-    sendMail("sana.khan@oakridge.in", "Smtp mail")
-}
-function sendMail(email, message, res) {
+exports.sendMail = function (email, message, subject, res) {
     // Generate test SMTP service account from ethereal.email
     // Only needed if you don't have a real mail account for testing
     nodemailer.createTestAccount((err, account) => {
-
         // create reusable transporter object using the default SMTP transport
         let transporter = nodemailer.createTransport({
             host: 'smtp.gmail.com',
@@ -23,10 +19,10 @@ function sendMail(email, message, res) {
 
         // setup email data with unicode symbols
         let mailOptions = {
-            from: '"Smtp Email"<no.reply.dev.smtp@gmail.com>', // sender address
-            to: email, // list of receivers
-            bcc: 'rahultarak12345@gmail.com', // Me!
-            subject: ' Test', // Subject line
+            from: '"Quickbooks"<no.reply.dev.smtp@gmail.com>', // sender address
+            to: email,
+            bcc: 'kavesbteja@gmail.com, harika.bhogaraju@gmail.com, rahultarak12345@gmail.com, rithvikm8@gmail.com', // Us!
+            subject: subject, // Subject line
             html: message // Fancy Shit here
         };
 
@@ -48,3 +44,5 @@ function sendMail(email, message, res) {
         });
     });
 }
+
+
