@@ -64,6 +64,9 @@ app.post('/addFeaturedBooks', function(req, res) {
 app.post('/removeFeaturedBooks', function(req, res) {
     books.removeFeaturedBook(req,res,con,app.get('jwtTokenSecret'));
 });
+app.post('/getBookDetails', function(req, res) {
+   books.getBookDetails(req, res, con);
+});
 
 // Handling Requests of type GET, used to get Data from the server or databae
 app.get('/verify', function(req, res) { // Request to verify email after signup, This request is from the browser after email link is clicked

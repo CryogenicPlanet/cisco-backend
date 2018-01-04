@@ -105,6 +105,48 @@ var addNewBookFile = async function(ubid, name, author, genre, year) {
     }
 
 }
+exports.getBookDetails = async function(req, res, con) {
+    var bookdetails = []
+
+    function newDetails(ubid, bookname, authorname, genrename, year, owners) {
+        this.ubid = ubid;
+        this.bookname = bookname
+        this.authorname = authorname;
+        this.genrename = genrename;
+        this.year = year;
+        this.owners = owners;
+    }
+
+    function newOwner(uuid, username, description) {
+        this.uuid = uuid;
+        this.username = username;
+        this.description = description;
+    }
+    var bookname = req.body.name;
+    let details = await con.query(`SELECT * FROM Books WHERE Name="${req.body.name}"`);
+    details = details[0];
+    let ubid = details.UBID;
+    let year = details.Year;
+    let [authorname] = await con.query(`SELECT Name FROM Authors WHERE UAID="${details.Author}"`);
+    authorname = authorname.Name;
+    let [genrename] = await con.query(`SELECT Name FROM Genres WHERE UGID="${details.Genre}"`);
+    genrename = genrename.Name;
+
+    let bookowners = await con.query(`SELECT * FROM ${"`User's Book`"} WHERE Book=${ubid}`);
+    var ownersarray = []
+
+    for (let owner of bookowners) {
+        let [username] = await con.query(`SELECT Name FROM Users WHERE UUID="${owner.User}"`);
+        username = username.Name;
+        ownersarray.push(new newOwner(owner.User, username, owner.Description));
+    }
+
+    bookdetails.push(new newDetails(ubid, bookname, authorname, genrename, year, ownersarray));
+
+    res.status(200).json({
+        bookdetails: bookdetails
+    })
+}
 exports.getAuthor = async function(req, res, con) {
     var books = [];
 
@@ -165,7 +207,7 @@ exports.getGenre = async function(req, res, con) {
 
 }
 // Featured Books
-exports.getFeaturedBooks = async function(req, res, con,secret) {
+exports.getFeaturedBooks = async function(req, res, con, secret) {
     var books = [];
 
     var token = req.body.token || req.query.token || req.headers['x-access-token'];
@@ -183,7 +225,7 @@ exports.getFeaturedBooks = async function(req, res, con,secret) {
     if (userId != -1) {
         uuid = userId;
     }
-    let featuredBooks = await con.query(`SELECT * FROM ${"`Featured Books`"} WHERE User="${uuid}"`); 
+    let featuredBooks = await con.query(`SELECT * FROM ${"`Featured Books`"} WHERE User="${uuid}"`);
 
     function newBook(UBID, Name, Author, Genre, Year, Description, Image) {
         this.ubid = UBID;
