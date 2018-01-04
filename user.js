@@ -97,7 +97,6 @@ exports.followerBooks = async function(req, res, con, secret) { // Function to c
 };
 
 exports.newUser = function(req, res, con) {
-
     var Status, Message;
     var name = req.body.name;
     var email = req.body.email;
@@ -218,6 +217,13 @@ exports.userDetails = async function(req, res, con, secret) {
             uuid = decoded.uuid;
         }
     });
+    console.log("UUID IS :" + uuid);
+    var userId = req.body.userId || req.query.userId || req.headers['x-user-id']; // Copy
+    console.log(userId);
+    if (userId != -1) {
+        uuid = userId;
+    }
+    console.log("Final UUID is" + uuid);
     var newbooks = [];
 
     function NewBook(ubid, bookname, author, genre, year, description, image) {
@@ -261,6 +267,7 @@ exports.userDetails = async function(req, res, con, secret) {
         following.push(new users(follow.UUID, follow.Name));
     }
     var response = {
+        uuid: uuid,
         name: user.Name,
         books: newbooks,
         followers: followers,

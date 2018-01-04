@@ -10,10 +10,12 @@ var jsonParser = bodyParser.json(); // Using Data type Json
 var cors = require("cors"); // Library for handling access headers
 //Modules
 var user = require("./user.js"); // Object of our module User.js
-var borrow = require("./borrow.js") // Object of our module Borrow.js
-var search = require("./search.js")
-var books = require("./books.js")
-var mail = require("./mail.js")
+var borrow = require("./borrow.js"); // Object of our module Borrow.js
+var search = require("./search.js");
+var books = require("./books.js");
+var requests = require("./requests.js");
+var returns = require("./returns.js");
+var statusofbooks = require("./statusofbooks.js");
 //Server Don't worry about this
 var express = require('express'); // Framework for Node
 var app = express(); // Establishing Express App
@@ -46,6 +48,25 @@ app.post('/borrow',function(req, res) {// Request to Borrow a Book
 app.post('/addBook',function(req, res) {
     books.addBook(req,res,con,app.get('jwtTokenSecret'));
 });
+//New 
+app.post('/postresponse', function(req, res) {
+    requests.postResponse(req,res,con,app.get('jwtTokenSecret'));
+});
+app.post('/returnbook', function(req, res) {
+    returns.returnBook(req,res,con,app.get('jwtTokenSecret'));
+});
+app.post('/takeBackBook', function(req, res) {
+    statusofbooks.takeBackBook(req,res,con,app.get('jwtTokenSecret'));
+});
+app.post('/addFeaturedBooks', function(req, res) {
+    books.addFeaturedBook(req,res,con,app.get('jwtTokenSecret'));
+});
+app.post('/removeFeaturedBooks', function(req, res) {
+    books.removeFeaturedBook(req,res,con,app.get('jwtTokenSecret'));
+});
+app.post('/getBookDetails', function(req, res) {
+   books.getBookDetails(req, res, con);
+});
 
 // Handling Requests of type GET, used to get Data from the server or databae
 app.get('/verify', function(req, res) { // Request to verify email after signup, This request is from the browser after email link is clicked
@@ -71,4 +92,23 @@ app.get('/searchGenre', function(req, res) {
 });
 app.get('/showAuthor',function(req, res) {
     books.getAuthor(req,res,con);
+});
+app.get('/showGenre',function(req, res) {
+    books.getGenre(req,res,con);
+});
+// New Stuff
+app.get('/requests', function(req, res) {
+    requests.getRequests(req, res, con,app.get('jwtTokenSecret'));
+});
+app.get('/userrequests', function(req, res) {
+    requests.getUserRequests(req, res, con,app.get('jwtTokenSecret'));
+});
+app.get('/borrowedBooks', function(req, res) {
+    returns.getBorrowedBooks(req, res, con,app.get('jwtTokenSecret'));
+});
+app.get('/lentBooks', function(req, res) {
+    statusofbooks.getLentBooks(req, res, con,app.get('jwtTokenSecret'));
+});
+app.get('/featuredBooks', function(req, res) {
+    books.getFeaturedBooks(req, res, con,app.get('jwtTokenSecret'));
 });

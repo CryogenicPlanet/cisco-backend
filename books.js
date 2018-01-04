@@ -105,6 +105,48 @@ var addNewBookFile = async function(ubid, name, author, genre, year) {
     }
 
 }
+exports.getBookDetails = async function(req, res, con) {
+    var bookdetails = []
+
+    function newDetails(ubid, bookname, authorname, genrename, year, owners) {
+        this.ubid = ubid;
+        this.bookname = bookname
+        this.authorname = authorname;
+        this.genrename = genrename;
+        this.year = year;
+        this.owners = owners;
+    }
+
+    function newOwner(uuid, username, description) {
+        this.uuid = uuid;
+        this.username = username;
+        this.description = description;
+    }
+    var bookname = req.body.name;
+    let details = await con.query(`SELECT * FROM Books WHERE Name="${req.body.name}"`);
+    details = details[0];
+    let ubid = details.UBID;
+    let year = details.Year;
+    let [authorname] = await con.query(`SELECT Name FROM Authors WHERE UAID="${details.Author}"`);
+    authorname = authorname.Name;
+    let [genrename] = await con.query(`SELECT Name FROM Genres WHERE UGID="${details.Genre}"`);
+    genrename = genrename.Name;
+
+    let bookowners = await con.query(`SELECT * FROM ${"`User's Book`"} WHERE Book=${ubid}`);
+    var ownersarray = []
+
+    for (let owner of bookowners) {
+        let [username] = await con.query(`SELECT Name FROM Users WHERE UUID="${owner.User}"`);
+        username = username.Name;
+        ownersarray.push(new newOwner(owner.User, username, owner.Description));
+    }
+
+    bookdetails.push(new newDetails(ubid, bookname, authorname, genrename, year, ownersarray));
+
+    res.status(200).json({
+        bookdetails: bookdetails
+    })
+}
 exports.getAuthor = async function(req, res, con) {
     var books = [];
 
@@ -116,15 +158,153 @@ exports.getAuthor = async function(req, res, con) {
         this.year = year;
         //   this.image = image
     }
-    console.log("Uaid : " + req.query.uaid);
-    var getBooks = await con.query(`SELECT * FROM Books WHERE Author=${req.query.uaid}`);
+    console.log("Uaid : " + req.query.author);
+    let [author] = await con.query(`SELECT * FROM Authors WHERE Name="${req.query.author}"`)
+    var getBooks = await con.query(`SELECT * FROM Books WHERE Author=${author.UAID}`);
     for (var book of getBooks) {
         let [genre] = await con.query(`SELECT * FROM Genres WHERE UGID=${book.Genre}`);
-        let [author] = await con.query(`SELECT * FROM Authors WHERE UAID=${req.query.uaid}`) 
         books.push(new NewBook(book.UBID, book.Name, author, genre, book.Year));
     }
     res.status(200).json({
         books: books
     });
 
+}
+exports.getGenre = async function(req, res, con) {
+    var books = [];
+
+    function NewBook(ubid, bookname, author, genre, year, owners) {
+        this.ubid = ubid;
+        this.bookname = bookname;
+        this.author = author;
+        this.genre = genre;
+        this.year = year;
+        this.owners = owners;
+    }
+
+    function sameBooks(ownerName, description, Image) {
+        this.ownername = ownerName;
+        this.description = description;
+        this.image = Image;
+        console.log(this.image);
+    }
+    console.log("Uaid : " + req.query.genre);
+
+    let genres = await con.query(`SELECT * FROM Genres WHERE Name="${req.query.genre}"`)
+    var genreID = genres[0].UGID;
+    console.log(genreID);
+    var getBooks = await con.query(`SELECT * FROM Books WHERE Genre=${genreID}`);
+    for (let i = 0; i < getBooks.length; i++) {
+        var book = getBooks[i];
+        var authorname = await con.query(`SELECT Name FROM Authors WHERE UAID=${book.Author}`);
+        authorname = authorname[0].Name;
+        console.log(authorname);
+        books.push(new NewBook(book.UBID, book.Name, authorname, book.Genre, book.Year));
+    }
+    res.status(200).json({
+        books: books
+    });
+
+}
+// Featured Books
+exports.getFeaturedBooks = async function(req, res, con, secret) {
+    var books = [];
+
+    var token = req.body.token || req.query.token || req.headers['x-access-token'];
+    var uuid;
+    jwt.verify(token, secret, function(err, decoded) {
+        if (err) {
+            return res.json({ success: false, message: 'Failed to authenticate token.' });
+        }
+        else {
+            // Everything is good
+            uuid = decoded.uuid;
+        }
+    });
+    var userId = req.body.userId || req.query.userId || req.headers['x-user-id']; // Copy
+    if (userId != -1) {
+        uuid = userId;
+    }
+    let featuredBooks = await con.query(`SELECT * FROM ${"`Featured Books`"} WHERE User="${uuid}"`);
+
+    function newBook(UBID, Name, Author, Genre, Year, Description, Image) {
+        this.ubid = UBID;
+        this.bookname = Name;
+        this.author = Author;
+        this.genre = Genre;
+        this.year = Year;
+        this.description = Description;
+        this.image = Image;
+    }
+
+    for (let featuredBook of featuredBooks) {
+        var UBID = featuredBook.User_Book;
+        let [book] = await con.query(`SELECT * FROM ${"`User's Book`"}  WHERE Book="${UBID}" AND User="${uuid}"`);
+        book = book;
+        let [bookdetails] = await con.query(`SELECT * FROM Books WHERE UBID="${UBID}"`);
+        bookdetails = bookdetails;
+        let [authorname] = await con.query(`SELECT Name FROM Authors WHERE UAID="${bookdetails.Author}"`);
+        authorname = authorname.Name;
+        let [genrename] = await con.query(`SELECT Name FROM Genres WHERE UGID="${bookdetails.Genre}"`);
+        genrename = genrename.Name;
+        books.push(new newBook(UBID, bookdetails.Name, authorname, genrename, book.Year, book.Description, book.Image));
+    }
+
+    res.status(200).json({
+        books: books
+    });
+}
+
+exports.addFeaturedBook = async function(req, res, con, secret) {
+    var token = req.body.token || req.query.token || req.headers['x-access-token'];
+    var uuid;
+    jwt.verify(token, secret, function(err, decoded) {
+        if (err) {
+            return res.json({ success: false, message: 'Failed to authenticate token.' });
+        }
+        else {
+            // Everything is good
+            uuid = decoded.uuid;
+        }
+    });
+
+    var book = req.body.featuredbook;
+    var bookid = book.ubid;
+    var existing = await con.query(`SELECT * FROM ${"`Featured Books`"} WHERE User="${uuid}" AND User_Book=${bookid}`);
+    if (existing.length == 0) {
+        var querystring = `INSERT INTO ${"`Featured Books`"} (User, User_Book) VALUES ("${uuid}","${bookid}")`;
+        let updatefeatured = await con.query(querystring)
+
+        res.status(200).json({
+            message: "Your request to add a featured book has been successful!!"
+        });
+    }
+    else {
+        res.status(200).json({
+            message: "That book already is your featured book"
+        });
+    }
+}
+
+exports.removeFeaturedBook = async function(req, res, con, secret) {
+    var token = req.body.token || req.query.token || req.headers['x-access-token'];
+    var uuid;
+    jwt.verify(token, secret, function(err, decoded) {
+        if (err) {
+            return res.json({ success: false, message: 'Failed to authenticate token.' });
+        }
+        else {
+            // Everything is good
+            uuid = decoded.uuid;
+        }
+    });
+
+    var book = req.body.featuredbook;
+    var bookid = book.ubid;
+    var querystring = `DELETE FROM ${"`Featured Books`"} WHERE User="${uuid}" AND User_Book="${bookid}"`;
+    let updatefeatured = await con.query(querystring);
+
+    res.status(200).json({
+        message: "Your request to remove a featured book has been successful!!"
+    });
 }
